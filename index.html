@@ -24,7 +24,7 @@
         <div class="login-card__title">NNS Hidden Relay</div>
         <div class="login-card__subtitle">
           A browser-based virtual relay for the Nostr Network Stack.
-          Import an existing identity or generate a new one.
+          Import an existing identity to get started.
         </div>
       </div>
 
@@ -37,12 +37,6 @@
         </div>
       </div>
 
-      <div class="login-divider">or</div>
-
-      <button class="btn btn--primary" id="btn-login-generate" style="width:100%">
-        Generate New Identity
-      </button>
-
       <!-- Rendezvous relays -->
       <div class="login-divider">rendezvous relays</div>
       <div class="field" style="margin-bottom:var(--space-sm)">
@@ -54,18 +48,14 @@
       <div id="login-relay-list" class="chip-list"></div>
 
       <div id="login-error" class="login-error hidden"></div>
-
-      <div class="login-links">
-        <a href="https://github.com/niccoloAldini/nostr_network_stack_nip" target="_blank">nns nip</a>
-        &nbsp;·&nbsp;
-        <a href="https://github.com/nostr-protocol/nips" target="_blank">nostr protocol</a>
-      </div>
     </div>
+    <footer class="app-footer">
+      <a href="https://github.com/paulle0/nostr_network_stack_nip" target="_blank">nns nip</a> · <a href="https://github.com/paulle0/nns_hidden_relay" target="_blank">nns hidden relay</a> · <a href="https://github.com/nostr-protocol/nips" target="_blank">nostr protocol</a> · <a href="https://github.com/nbd-wtf/nostr-tools" target="_blank">nostr-tools</a>
+    </footer>
   </div>
 
   <!-- ============ MAIN APP ============ -->
   <div id="app-screen" class="hidden">
-
     <!-- Top bar -->
     <header class="topbar">
       <img src="assets/nns.svg" alt="NNS" class="topbar__logo">
@@ -74,9 +64,7 @@
       <button class="btn btn--ghost btn--sm" id="btn-logout">Logout</button>
       <button class="theme-toggle" id="theme-toggle" title="Toggle theme">☀</button>
     </header>
-
     <main class="shell">
-
       <!-- Identity card -->
       <section class="card">
         <div class="card__header">
@@ -91,15 +79,21 @@
             <label>npub</label>
             <div id="npub-display" class="identity-value">—</div>
           </div>
-          <div class="field" style="margin-bottom:0">
+          <div class="field">
             <label>nsec (keep secret!)</label>
             <div id="nsec-display" class="identity-value"
                  style="filter:blur(4px); cursor:pointer"
                  onclick="this.style.filter = this.style.filter ? '' : 'blur(4px)'">—</div>
           </div>
+          <div class="field" style="margin-bottom:0">
+            <label>nrvrelay (share this to connect)</label>
+            <div class="row" style="gap:var(--space-sm)">
+              <div id="nrvrelay-display" class="identity-value" style="flex:1">—</div>
+              <button class="btn btn--ghost btn--sm" id="btn-copy-nrvrelay" title="Copy to clipboard">📋</button>
+            </div>
+          </div>
         </div>
       </section>
-
       <!-- Rendezvous relays card -->
       <section class="card">
         <div class="card__header">
@@ -116,7 +110,6 @@
           <div id="relay-chip-list" class="chip-list"></div>
         </div>
       </section>
-
       <!-- Controls card -->
       <section class="card">
         <div class="card__header">
@@ -134,7 +127,6 @@
           </div>
         </div>
       </section>
-
       <!-- Whitelist card -->
       <section class="card">
         <div class="card__header">
@@ -152,7 +144,6 @@
           <div id="chip-list" class="chip-list"></div>
         </div>
       </section>
-
       <!-- Events card -->
       <section class="card">
         <div class="card__header">
@@ -168,7 +159,6 @@
           </div>
         </div>
       </section>
-
       <!-- Log card -->
       <section class="card">
         <div class="card__header">
@@ -178,8 +168,10 @@
           <div id="log-area" class="log-area"></div>
         </div>
       </section>
-
     </main>
+    <footer class="app-footer">
+      <a href="https://github.com/paulle0/nostr_network_stack_nip" target="_blank">nns nip</a> · <a href="https://github.com/paulle0/nns_hidden_relay" target="_blank">nns hidden relay</a> · <a href="https://github.com/nostr-protocol/nips" target="_blank">nostr protocol</a> · <a href="https://github.com/nbd-wtf/nostr-tools" target="_blank">nostr-tools</a>
+    </footer>
   </div>
 
   <!-- Event detail modal -->
