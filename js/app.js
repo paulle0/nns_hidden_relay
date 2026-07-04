@@ -3,178 +3,143 @@
  */
 import { DEFAULTS, STORAGE_KEY } from './config.js';
 import * as crypto from './crypto.js';
-import * as storage from './storage.js';
 import * as log from './logger.js';
-import { RelayConnection } from './relay-connection.js';
-import { RelayHandler } from './relay-handler.js';
-import { publishRelayList, publishRelayInfo } from './announcer.js';
 import {
   el, setStatus, appendLog, renderEvents,
-  renderWhitelist, setTheme, initModal,
+  renderWhitelist, renderRelayChips,
+  setTheme, initModal, showLogin, showApp,
 } from './ui.js';
+import { initAppControls } from './app-controls.js';
 
-let connection = null;
-let handler = null;
 let secretKey = null;
-let whitelist = [];
+let loginRelays = [];
 
-// ——— Initialization ——— //
+// ——— Boot ——— //
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initKeys();
-  initRelay();
-  initWhitelist();
-  initControls();
-  initModal();
   log.onLog((entry) => appendLog(entry));
-  renderEvents();
-  log.info('NNS Hidden Relay ready.');
+
+  if (isLoggedIn()) {
+    secretKey = crypto.loadSecretKey();
+    if (secretKey) {
+      enterApp();
+    } else {
+      showLogin();
+      initLoginScreen();
+    }
+  } else {
+    showLogin();
+    initLoginScreen();
+  }
 });
+
+function isLoggedIn() {
+  return localStorage.getItem(STORAGE_KEY.LOGGED_IN) === '1'
+    && localStorage.getItem(STORAGE_KEY.SECRET_KEY);
+}
 
 // ——— Theme ——— //
 function initTheme() {
   const saved = localStorage.getItem(STORAGE_KEY.THEME) || 'dark';
   setTheme(saved);
-  el.themeToggle.addEventListener('click', () => {
-    const next = document.documentElement.getAttribute('data-theme') === 'dark'
-      ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem(STORAGE_KEY.THEME, next);
+  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+  document.getElementById('login-theme-toggle')?.addEventListener('click', toggleTheme);
+}
+
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+  localStorage.setItem(STORAGE_KEY.THEME, next);
+}
+
+// ——— Login screen ——— //
+function initLoginScreen() {
+  loginRelays = [...DEFAULTS.rendezvousRelays];
+  renderLoginRelays();
+
+  el.loginBtnImport.addEventListener('click', handleImportNsec);
+  el.loginNsecInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleImportNsec();
+  });
+  el.loginBtnGenerate.addEventListener('click', handleGenerateKey);
+  el.loginRelayAdd.addEventListener('click', handleLoginRelayAdd);
+  el.loginRelayInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleLoginRelayAdd();
   });
 }
 
-// ——— Key management ——— //
-function initKeys() {
-  secretKey = crypto.loadSecretKey();
-  if (secretKey) showPubkey();
-
-  el.generateKeyBtn.addEventListener('click', () => {
-    if (secretKey && !confirm('This will replace your current relay identity. Continue?')) {
-      return;
-    }
-    secretKey = crypto.generateSecretKey();
-    crypto.saveSecretKey(secretKey);
-    showPubkey();
-    log.ok('New relay identity generated.');
-  });
+function handleImportNsec() {
+  const val = el.loginNsecInput.value.trim();
+  if (!val) return showLoginError('Please paste an nsec1… key.');
+  try {
+    secretKey = crypto.nsecDecode(val);
+    completeLogin();
+  } catch (e) {
+    showLoginError('Invalid nsec. Must start with nsec1…');
+  }
 }
 
-function showPubkey() {
+function handleGenerateKey() {
+  secretKey = crypto.generateSecretKey();
+  completeLogin();
+}
+
+function completeLogin() {
+  if (loginRelays.length === 0) {
+    return showLoginError('Add at least one rendezvous relay.');
+  }
+  crypto.saveSecretKey(secretKey);
+  localStorage.setItem(STORAGE_KEY.RELAY_URLS, JSON.stringify(loginRelays));
+  localStorage.setItem(STORAGE_KEY.LOGGED_IN, '1');
+  enterApp();
+}
+
+function handleLoginRelayAdd() {
+  const val = el.loginRelayInput.value.trim();
+  if (!val) return;
+  if (!val.startsWith('wss://') && !val.startsWith('ws://')) {
+    return showLoginError('Relay URL must start with wss:// or ws://');
+  }
+  if (loginRelays.includes(val)) return;
+  loginRelays.push(val);
+  el.loginRelayInput.value = '';
+  renderLoginRelays();
+  showLoginError('');
+}
+
+function renderLoginRelays() {
+  renderRelayChips(loginRelays, (idx) => {
+    loginRelays.splice(idx, 1);
+    renderLoginRelays();
+  }, el.loginRelayList);
+}
+
+function showLoginError(msg) {
+  el.loginError.textContent = msg;
+  el.loginError.classList.toggle('hidden', !msg);
+}
+
+// ——— Enter main app ——— //
+function enterApp() {
+  showApp();
+  initModal();
+
   const pk = crypto.getPublicKey(secretKey);
   el.pubkeyDisplay.textContent = pk;
   el.pubkeyDisplay.title = pk;
+  el.npubDisplay.textContent = crypto.npubEncode(pk);
+  el.nsecDisplay.textContent = crypto.nsecEncode(secretKey);
+
+  el.logoutBtn.addEventListener('click', handleLogout);
+  initAppControls(secretKey);
+  renderEvents();
+  log.info('NNS Hidden Relay ready.');
 }
 
-// ——— Relay URL ——— //
-function initRelay() {
-  const saved = localStorage.getItem(STORAGE_KEY.RELAY_URL) || DEFAULTS.rendezvousRelay;
-  el.relayUrl.value = saved;
-  el.relayUrl.addEventListener('change', () => {
-    localStorage.setItem(STORAGE_KEY.RELAY_URL, el.relayUrl.value.trim());
-  });
-}
-
-// ——— Whitelist ——— //
-function initWhitelist() {
-  const saved = localStorage.getItem(STORAGE_KEY.WHITELIST);
-  whitelist = saved ? JSON.parse(saved) : [];
-  renderWhitelist(whitelist, removeFromWhitelist);
-
-  el.whitelistAdd.addEventListener('click', addToWhitelist);
-  el.whitelistInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addToWhitelist();
-  });
-}
-
-function addToWhitelist() {
-  const val = el.whitelistInput.value.trim();
-  if (!val || !/^[0-9a-f]{64}$/i.test(val)) {
-    log.err('Invalid pubkey. Must be 64-char hex.');
-    return;
-  }
-  if (whitelist.includes(val)) return;
-  whitelist.push(val);
-  saveWhitelist();
-  el.whitelistInput.value = '';
-}
-
-function removeFromWhitelist(pk) {
-  whitelist = whitelist.filter(p => p !== pk);
-  saveWhitelist();
-}
-
-function saveWhitelist() {
-  localStorage.setItem(STORAGE_KEY.WHITELIST, JSON.stringify(whitelist));
-  renderWhitelist(whitelist, removeFromWhitelist);
-  if (handler) handler.setWhitelist(whitelist);
-}
-
-// ——— Start / Stop ——— //
-function initControls() {
-  el.startBtn.addEventListener('click', startRelay);
-  el.stopBtn.addEventListener('click', stopRelay);
-  el.clearEventsBtn.addEventListener('click', async () => {
-    if (!confirm('Delete all stored events?')) return;
-    await storage.clearEvents();
-    renderEvents();
-    log.info('All events cleared.');
-  });
-  setStatus('off', 'Stopped');
-}
-
-function startRelay() {
-  if (!secretKey) {
-    log.err('Generate a relay identity first.');
-    return;
-  }
-  const url = el.relayUrl.value.trim();
-  if (!url) {
-    log.err('Enter a rendezvous relay URL.');
-    return;
-  }
-
-  const pubkey = crypto.getPublicKey(secretKey);
-  connection = new RelayConnection(url);
-  handler = new RelayHandler(
-    secretKey,
-    (event) => connection.publish(event),
-    () => renderEvents(),
-  );
-  handler.setWhitelist(whitelist);
-
-  connection.onEvent((event) => handler.handleEvent(event));
-  connection.onStatus((status) => {
-    switch (status) {
-      case 'connecting':
-        setStatus('off', 'Connecting…');
-        break;
-      case 'open':
-        setStatus('on', 'Running');
-        el.startBtn.disabled = true;
-        el.stopBtn.disabled = false;
-        // Announce this relay on the rendezvous relay (NNS NIP §10112/10113)
-        publishRelayList(secretKey, url, (ev) => connection.publish(ev));
-        publishRelayInfo(secretKey, (ev) => connection.publish(ev));
-        break;
-      case 'closed':
-      case 'error':
-        setStatus(status === 'error' ? 'error' : 'off',
-          status === 'error' ? 'Error' : 'Disconnected');
-        break;
-    }
-  });
-
-  connection.connect(pubkey);
-}
-
-function stopRelay() {
-  if (connection) {
-    connection.disconnect();
-    connection = null;
-    handler = null;
-  }
-  setStatus('off', 'Stopped');
-  el.startBtn.disabled = false;
-  el.stopBtn.disabled = true;
-  log.info('Relay stopped.');
+function handleLogout() {
+  if (!confirm('Log out? Your relay will stop and your key will be removed from this browser.')) return;
+  crypto.clearSecretKey();
+  localStorage.removeItem(STORAGE_KEY.LOGGED_IN);
+  secretKey = null;
+  location.reload();
 }

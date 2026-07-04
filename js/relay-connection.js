@@ -1,5 +1,5 @@
 /**
- * NNS Hidden Relay — WebSocket connection to rendezvous relay
+ * NNS Hidden Relay — WebSocket connection to a single rendezvous relay
  */
 import * as log from './logger.js';
 
@@ -14,13 +14,9 @@ export class RelayConnection {
     this._intentionallyClosed = false;
   }
 
-  /** Set callback for incoming events: fn(event) */
   onEvent(fn) { this._onEvent = fn; }
-
-  /** Set callback for status changes: fn('connecting'|'open'|'closed'|'error') */
   onStatus(fn) { this._onStatus = fn; }
 
-  /** Connect and subscribe to kind:27901 events for our pubkey. */
   connect(ourPubkey) {
     this._intentionallyClosed = false;
     this._ourPubkey = ourPubkey;
@@ -57,58 +53,44 @@ export class RelayConnection {
     this.ws.onclose = () => {
       this._setStatus('closed');
       if (!this._intentionallyClosed) {
-        log.info('Connection lost. Reconnecting in 5s…');
+        log.info(`Lost ${this.url}. Reconnecting in 5s…`);
         this._reconnectTimer = setTimeout(() => this._openSocket(), 5000);
-      } else {
-        log.info('Disconnected.');
       }
     };
   }
 
-  /** Subscribe for kind:27901 events addressed to our pubkey. */
   _subscribe() {
     this._subId = 'nns_' + Math.random().toString(36).slice(2, 10);
-    const filter = {
-      kinds: [27901],
-      '#p': [this._ourPubkey],
-    };
-    const req = JSON.stringify(['REQ', this._subId, filter]);
-    this.ws.send(req);
-    log.info(`Subscribed (${this._subId}) for kind:27901 → ${this._ourPubkey.slice(0, 12)}…`);
+    const filter = { kinds: [27901], '#p': [this._ourPubkey] };
+    this.ws.send(JSON.stringify(['REQ', this._subId, filter]));
+    log.info(`Sub ${this._subId} on ${this.url}`);
   }
 
   _handleMessage(msg) {
     if (!Array.isArray(msg)) return;
     const [type] = msg;
-
     if (type === 'EVENT' && msg[2]) {
       if (this._onEvent) this._onEvent(msg[2]);
     } else if (type === 'EOSE') {
-      log.info('End of stored events. Listening for new events…');
+      log.info(`EOSE on ${this.url}`);
     } else if (type === 'NOTICE') {
-      log.info(`Relay notice: ${msg[1]}`);
+      log.info(`Notice (${this.url}): ${msg[1]}`);
     } else if (type === 'OK') {
-      // publish acknowledgement
       const [, eventId, success, reason] = msg;
       if (success) {
-        log.ok(`Event ${eventId.slice(0, 12)}… published`);
+        log.ok(`Published ${eventId.slice(0, 12)}…`);
       } else {
-        log.err(`Publish rejected: ${reason}`);
+        log.err(`Rejected: ${reason}`);
       }
     }
   }
 
-  /** Send a signed event to the relay. */
-  publish(event) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      log.err('Cannot publish: not connected');
-      return false;
+  send(signedEvent) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(['EVENT', signedEvent]));
     }
-    this.ws.send(JSON.stringify(['EVENT', event]));
-    return true;
   }
 
-  /** Gracefully disconnect. */
   disconnect() {
     this._intentionallyClosed = true;
     clearTimeout(this._reconnectTimer);
@@ -122,11 +104,17 @@ export class RelayConnection {
   }
 
   _cleanup() {
-    this.ws = null;
+    if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      this.ws = null;
+    }
     this._subId = null;
   }
 
   _setStatus(s) {
-    if (this._onStatus) this._onStatus(s);
+    if (this._onStatus) this._onStatus(s, this.url);
   }
 }

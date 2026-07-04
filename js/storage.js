@@ -5,7 +5,6 @@ import { DB } from './config.js';
 
 let _db = null;
 
-/** Open (or create) the IndexedDB database. */
 function openDB() {
   if (_db) return Promise.resolve(_db);
   return new Promise((resolve, reject) => {
@@ -24,7 +23,6 @@ function openDB() {
   });
 }
 
-/** Store a Nostr event. Silently ignores duplicates. */
 export async function putEvent(event) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -39,7 +37,6 @@ export async function putEvent(event) {
   });
 }
 
-/** Get all stored events, newest first. */
 export async function getAllEvents() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -55,7 +52,6 @@ export async function getAllEvents() {
   });
 }
 
-/** Delete a single event by id. */
 export async function deleteEvent(id) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -66,7 +62,6 @@ export async function deleteEvent(id) {
   });
 }
 
-/** Clear all events. */
 export async function clearEvents() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -77,7 +72,6 @@ export async function clearEvents() {
   });
 }
 
-/** Count stored events. */
 export async function countEvents() {
   const db = await openDB();
   return new Promise((resolve, reject) => {

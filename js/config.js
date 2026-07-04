@@ -3,27 +3,28 @@
  */
 
 export const DEFAULTS = {
-  rendezvousRelay: 'wss://nos.lol',
+  rendezvousRelays: ['wss://nos.lol'],
   relayName: 'NNS Hidden Relay',
-  relayDescription: 'A browser-based NNS hidden relay (proof of concept)',
+  relayDescription: 'A browser-based NNS hidden relay',
 };
 
 // NNS protocol event kinds
 export const KIND = {
-  RELAY_LIST:  10112,  // rendezvous relay list (replaceable)
-  RELAY_INFO:  10113,  // relay info document (replaceable)
-  NNS_MESSAGE: 27901,  // ephemeral tunnelled messages
+  RELAY_LIST:  10112,
+  RELAY_INFO:  10113,
+  NNS_MESSAGE: 27901,
 };
 
-// LocalStorage keys for persistent settings
+// LocalStorage keys
 export const STORAGE_KEY = {
-  SECRET_KEY:  'nns_secret_key',
-  RELAY_URL:   'nns_relay_url',
-  WHITELIST:   'nns_whitelist',
-  THEME:       'nns_theme',
+  SECRET_KEY:    'nns_secret_key',
+  RELAY_URLS:    'nns_relay_urls',
+  WHITELIST:     'nns_whitelist',
+  THEME:         'nns_theme',
+  LOGGED_IN:     'nns_logged_in',
 };
 
-// IndexedDB config for event storage
+// IndexedDB config
 export const DB = {
   name:    'nns_hidden_relay',
   version: 1,

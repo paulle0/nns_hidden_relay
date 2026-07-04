@@ -1,6 +1,6 @@
 /**
  * NNS Hidden Relay — Logger
- * Manages in-app log entries shown in the GUI console area.
+ * In-app log entries for the GUI console area.
  */
 
 const MAX_ENTRIES = 200;

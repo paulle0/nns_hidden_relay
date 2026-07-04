@@ -2,35 +2,62 @@
  * NNS Hidden Relay — UI helpers
  */
 import * as storage from './storage.js';
-import * as log from './logger.js';
+
+const $ = (sel) => document.querySelector(sel);
 
 // ——— DOM references ——— //
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
-
 export const el = {
-  get relayUrl()      { return $('#relay-url'); },
-  get pubkeyDisplay() { return $('#pubkey-display'); },
-  get startBtn()      { return $('#btn-start'); },
-  get stopBtn()       { return $('#btn-stop'); },
-  get statusBanner()  { return $('#status-banner'); },
-  get statusText()    { return $('#status-text'); },
-  get statusDot()     { return $('#status-dot'); },
-  get logArea()       { return $('#log-area'); },
-  get eventList()     { return $('#event-list'); },
-  get eventCount()    { return $('#event-count'); },
-  get whitelistInput(){ return $('#whitelist-input'); },
-  get whitelistAdd()  { return $('#whitelist-add'); },
-  get chipList()      { return $('#chip-list'); },
-  get clearEventsBtn(){ return $('#btn-clear-events'); },
-  get themeToggle()   { return $('#theme-toggle'); },
-  get modal()         { return $('#modal-backdrop'); },
-  get modalBody()     { return $('#modal-body'); },
-  get modalClose()    { return $('#modal-close'); },
-  get generateKeyBtn(){ return $('#btn-generate-key'); },
+  // Login screen
+  get loginScreen()     { return $('#login-screen'); },
+  get loginNsecInput()  { return $('#login-nsec'); },
+  get loginBtnImport()  { return $('#btn-login-import'); },
+  get loginBtnGenerate(){ return $('#btn-login-generate'); },
+  get loginRelayInput() { return $('#login-relay-input'); },
+  get loginRelayAdd()   { return $('#btn-login-relay-add'); },
+  get loginRelayList()  { return $('#login-relay-list'); },
+  get loginError()      { return $('#login-error'); },
+  // Main app
+  get appScreen()       { return $('#app-screen'); },
+  get pubkeyDisplay()   { return $('#pubkey-display'); },
+  get npubDisplay()     { return $('#npub-display'); },
+  get nsecDisplay()     { return $('#nsec-display'); },
+  get startBtn()        { return $('#btn-start'); },
+  get stopBtn()         { return $('#btn-stop'); },
+  get statusBanner()    { return $('#status-banner'); },
+  get statusText()      { return $('#status-text'); },
+  get statusDot()       { return $('#status-dot'); },
+  get logArea()         { return $('#log-area'); },
+  get eventList()       { return $('#event-list'); },
+  get eventCount()      { return $('#event-count'); },
+  get whitelistInput()  { return $('#whitelist-input'); },
+  get whitelistAdd()    { return $('#whitelist-add'); },
+  get chipList()        { return $('#chip-list'); },
+  get clearEventsBtn()  { return $('#btn-clear-events'); },
+  get themeToggle()     { return $('#theme-toggle'); },
+  get modal()           { return $('#modal-backdrop'); },
+  get modalBody()       { return $('#modal-body'); },
+  get modalClose()      { return $('#modal-close'); },
+  get logoutBtn()       { return $('#btn-logout'); },
+  // Relay management (main app)
+  get relayInput()      { return $('#relay-input'); },
+  get relayAddBtn()     { return $('#btn-relay-add'); },
+  get relayChipList()   { return $('#relay-chip-list'); },
 };
 
+// ——— Screens ——— //
+
+export function showLogin() {
+  el.loginScreen.classList.remove('hidden');
+  el.appScreen.classList.add('hidden');
+}
+
+export function showApp() {
+  el.loginScreen.classList.add('hidden');
+  el.appScreen.classList.remove('hidden');
+}
+
 // ——— Status banner ——— //
+
 export function setStatus(state, text) {
   const banner = el.statusBanner;
   const dot = el.statusDot;
@@ -48,6 +75,7 @@ export function setStatus(state, text) {
 }
 
 // ——— Log rendering ——— //
+
 export function appendLog(entry) {
   if (!entry) { el.logArea.innerHTML = ''; return; }
   const line = document.createElement('div');
@@ -57,7 +85,8 @@ export function appendLog(entry) {
   el.logArea.scrollTop = el.logArea.scrollHeight;
 }
 
-// ——— Event list rendering ——— //
+// ——— Event list ——— //
+
 export async function renderEvents() {
   const events = await storage.getAllEvents();
   const list = el.eventList;
@@ -79,11 +108,11 @@ export async function renderEvents() {
     </div>
   `).join('');
 
-  // Attach view handlers
   list.querySelectorAll('[data-view-id]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const ev = events.find(e => e.id === btn.dataset.viewId);
-      if (ev) showEventDetail(ev);
+    btn.addEventListener('click', async () => {
+      const evts = await storage.getAllEvents();
+      const ev = evts.find(e => e.id === btn.dataset.viewId);
+      if (ev) showEventModal(ev);
     });
   });
 }
@@ -92,45 +121,67 @@ function formatTime(ts) {
   return new Date(ts * 1000).toLocaleTimeString('en-GB', { hour12: false });
 }
 
-function showEventDetail(event) {
-  el.modalBody.innerHTML = `
-    <h3 style="margin-bottom:var(--space-sm)">Event Detail</h3>
-    <pre>${JSON.stringify(event, null, 2)}</pre>
-  `;
-  el.modal.classList.add('open');
-}
-
 // ——— Whitelist chips ——— //
-export function renderWhitelist(pubkeys, onRemove) {
+
+export function renderWhitelist(list, removeFn) {
   const container = el.chipList;
-  container.innerHTML = '';
-  pubkeys.forEach(pk => {
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.textContent = pk.slice(0, 16) + '…';
-    chip.title = pk;
-    const rm = document.createElement('button');
-    rm.className = 'chip__remove';
-    rm.textContent = '×';
-    rm.addEventListener('click', () => onRemove(pk));
-    chip.appendChild(rm);
-    container.appendChild(chip);
-  });
-  if (pubkeys.length === 0) {
-    container.innerHTML = '<span style="color:var(--text-tertiary);font-size:0.78rem">All pubkeys allowed (open relay)</span>';
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<span class="chip-list__empty">No pubkeys whitelisted — all requests will be rejected.</span>';
+    return;
   }
+  container.innerHTML = list.map((pk, i) => `
+    <span class="chip" title="${pk}">
+      ${pk.slice(0, 12)}…
+      <button class="chip__remove" data-idx="${i}">×</button>
+    </span>
+  `).join('');
+  container.querySelectorAll('.chip__remove').forEach(btn => {
+    btn.addEventListener('click', () => removeFn(parseInt(btn.dataset.idx)));
+  });
 }
 
-// ——— Theme ——— //
-export function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  el.themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+// ——— Relay chips ——— //
+
+export function renderRelayChips(urls, removeFn, container) {
+  if (!container) return;
+  if (urls.length === 0) {
+    container.innerHTML = '<span class="chip-list__empty">No relays configured.</span>';
+    return;
+  }
+  container.innerHTML = urls.map((url, i) => `
+    <span class="chip chip--relay" title="${url}">
+      ${url.replace('wss://', '').replace('ws://', '')}
+      <button class="chip__remove" data-idx="${i}">×</button>
+    </span>
+  `).join('');
+  container.querySelectorAll('.chip__remove').forEach(btn => {
+    btn.addEventListener('click', () => removeFn(parseInt(btn.dataset.idx)));
+  });
 }
 
 // ——— Modal ——— //
+
 export function initModal() {
-  el.modalClose.addEventListener('click', () => el.modal.classList.remove('open'));
-  el.modal.addEventListener('click', (e) => {
-    if (e.target === el.modal) el.modal.classList.remove('open');
+  el.modalClose?.addEventListener('click', closeModal);
+  el.modal?.addEventListener('click', (e) => {
+    if (e.target === el.modal) closeModal();
   });
+}
+
+function closeModal() {
+  el.modal.classList.remove('modal-backdrop--open');
+}
+
+function showEventModal(ev) {
+  el.modalBody.innerHTML = `<pre style="white-space:pre-wrap;word-break:break-all;font-size:0.78rem;font-family:var(--font-mono);color:var(--text-secondary)">${JSON.stringify(ev, null, 2)}</pre>`;
+  el.modal.classList.add('modal-backdrop--open');
+}
+
+// ——— Theme ——— //
+
+export function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = el.themeToggle;
+  if (btn) btn.textContent = theme === 'dark' ? '☀' : '☾';
 }
