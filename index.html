@@ -1,192 +1,99 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#6d28d9">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nns hidden relay</title>
-  <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" href="assets/nns.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="icon" href="assets/nns.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/login.css">
+  <meta name="theme-color" content="#6d28d9">
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/overlays.css" />
+  <link rel="stylesheet" href="css/views.css" />
   <script src="lib/nostr-tools.js"></script>
 </head>
 <body>
 
-  <!-- ============ LOGIN SCREEN ============ -->
-  <div id="login-screen" class="login-screen hidden">
-    <button class="theme-toggle login-theme-toggle" id="login-theme-toggle" title="Toggle theme">☀</button>
+<div class="grain"></div>
 
-    <div class="login-card">
-      <div class="login-card__header">
-        <img src="assets/nns.svg" alt="nns" class="login-card__logo">
-        <div class="login-card__title">nns hidden relay</div>
-        <div class="login-card__subtitle">
-          A browser-based hidden relay for the nostr network stack.
-          Import an existing identity to get started.
-        </div>
-      </div>
+<!-- ========== Topbar ========== -->
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/nns.svg" alt="nns" class="brand-mark" />
+    <span class="brand-text">
+      <span class="brand-title">nns hidden relay</span>
+      <span class="brand-sub">nostr network stack</span>
+    </span>
+  </div>
 
-      <!-- nsec import -->
-      <div class="login-section-label">Login with nsec</div>
-      <div class="field" style="margin-bottom:var(--space-sm)">
-        <div class="row">
-          <input type="password" id="login-nsec" placeholder="nsec1…" style="flex:1">
-          <button class="btn btn--primary btn--sm" id="btn-login-import">Login</button>
-        </div>
-      </div>
+  <nav class="topnav" id="topnav" hidden>
+    <button class="nav-link active" data-view="relay">Relay</button>
+    <button class="nav-link" data-view="settings">Settings</button>
+  </nav>
 
-      <!-- Rendezvous relays -->
-      <div class="login-divider">rendezvous relays</div>
-      <div class="field" style="margin-bottom:var(--space-sm)">
-        <div class="row">
-          <input type="text" id="login-relay-input" placeholder="wss://nos.lol" style="flex:1">
-          <button class="btn btn--ghost btn--sm" id="btn-login-relay-add">Add</button>
-        </div>
-      </div>
-      <div id="login-relay-list" class="chip-list"></div>
+  <div class="topbar-actions">
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">
+      <span class="theme-icon-light">☀</span>
+      <span class="theme-icon-dark">☾</span>
+    </button>
+    <button class="icon-btn" id="logoutBtn" hidden title="Log out">⏻</button>
+  </div>
+</header>
 
-      <div id="login-error" class="login-error hidden"></div>
+<!-- ========== App ========== -->
+<main id="app">
+
+  <!-- Login -->
+  <section class="view" data-view="login">
+    <div class="hero">
+      <img src="assets/nns.svg" alt="nns" class="hero-logo" />
+      <h1 class="hero-title">Your relay,<br /><em>your rules</em></h1>
+      <p class="hero-sub">A browser-based hidden relay for the nostr network stack. Import an identity to get started.</p>
     </div>
-    <footer class="app-footer">
-      <a href="https://github.com/paulle0/nostr_network_stack_nip" target="_blank">nns nip</a> · <a href="https://github.com/paulle0/nns_hidden_relay" target="_blank">nns hidden relay</a> · <a href="https://github.com/nostr-protocol/nips" target="_blank">nostr protocol</a> · <a href="https://github.com/nbd-wtf/nostr-tools" target="_blank">nostr-tools</a>
-    </footer>
-  </div>
+    <div class="card login-card" id="loginCard"></div>
+  </section>
 
-  <!-- ============ MAIN APP ============ -->
-  <div id="app-screen" class="hidden">
-    <!-- Top bar -->
-    <header class="topbar">
-      <img src="assets/nns.svg" alt="nns" class="topbar__logo">
-      <span class="topbar__title">nns hidden relay</span>
-      <div class="topbar__spacer"></div>
-      <button class="btn btn--ghost btn--sm" id="btn-logout">Logout</button>
-      <button class="theme-toggle" id="theme-toggle" title="Toggle theme">☀</button>
-    </header>
-    <main class="shell">
-      <!-- Identity card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Relay Identity</h2>
-        </div>
-        <div class="card__body">
-          <div class="field">
-            <label>Public Key (hex)</label>
-            <div id="pubkey-display" class="identity-value">—</div>
-          </div>
-          <div class="field">
-            <label>npub</label>
-            <div id="npub-display" class="identity-value">—</div>
-          </div>
-          <div class="field">
-            <label>nsec (keep secret!)</label>
-            <div id="nsec-display" class="identity-value"
-                 style="filter:blur(4px); cursor:pointer"
-                 onclick="this.style.filter = this.style.filter ? '' : 'blur(4px)'">—</div>
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>nrvrelay (share this to connect)</label>
-            <div class="row" style="gap:var(--space-sm)">
-              <div id="nrvrelay-display" class="identity-value" style="flex:1">—</div>
-              <button class="btn btn--ghost btn--sm" id="btn-copy-nrvrelay" title="Copy to clipboard">📋</button>
-            </div>
-          </div>
-        </div>
-      </section>
-      <!-- Rendezvous relays card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Rendezvous Relays</h2>
-        </div>
-        <div class="card__body">
-          <div class="field" style="margin-bottom:var(--space-sm)">
-            <label>Add relay</label>
-            <div class="row">
-              <input type="text" id="relay-input" placeholder="wss://relay.example.com" style="flex:1">
-              <button class="btn btn--primary btn--sm" id="btn-relay-add">Add</button>
-            </div>
-          </div>
-          <div id="relay-chip-list" class="chip-list"></div>
-        </div>
-      </section>
-      <!-- Controls card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Relay Control</h2>
-          <div class="topbar__spacer"></div>
-          <div id="status-banner" class="status-banner status-banner--off">
-            <span id="status-dot" class="status-dot"></span>
-            <span id="status-text">Stopped</span>
-          </div>
-        </div>
-        <div class="card__body">
-          <div class="row" style="gap:var(--space-md)">
-            <button class="btn btn--primary" id="btn-start">▶ Start Relay</button>
-            <button class="btn btn--danger" id="btn-stop" disabled>■ Stop Relay</button>
-          </div>
-        </div>
-      </section>
-      <!-- Whitelist card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Pubkey Whitelist</h2>
-        </div>
-        <div class="card__body">
-          <div class="field">
-            <label>Add pubkey (hex or npub1…)</label>
-            <div class="row">
-              <input type="text" id="whitelist-input"
-                     placeholder="npub1… or 64-char hex" style="flex:1">
-              <button class="btn btn--primary btn--sm" id="whitelist-add">Add</button>
-            </div>
-          </div>
-          <div id="chip-list" class="chip-list"></div>
-        </div>
-      </section>
-      <!-- Events card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Stored Events</h2>
-          <span style="font-size:0.78rem;color:var(--text-tertiary);margin-left:4px"
-                id="event-count">0</span>
-          <div class="topbar__spacer"></div>
-          <button class="btn btn--ghost btn--sm" id="btn-clear-events">Clear All</button>
-        </div>
-        <div class="card__body" style="padding:0">
-          <div id="event-list" class="event-list">
-            <div class="event-list__empty">No stored events yet.</div>
-          </div>
-        </div>
-      </section>
-      <!-- Log card -->
-      <section class="card">
-        <div class="card__header">
-          <h2>Activity Log</h2>
-        </div>
-        <div class="card__body">
-          <div id="log-area" class="log-area"></div>
-        </div>
-      </section>
-    </main>
-    <footer class="app-footer">
-      <a href="https://github.com/paulle0/nostr_network_stack_nip" target="_blank">nns nip</a> · <a href="https://github.com/paulle0/keyring_nip" target="_blank">keyring nip</a> · <a href="https://github.com/paulle0/nns_hidden_relay" target="_blank">nns hidden relay</a> · <a href="https://github.com/nostr-protocol/nips" target="_blank">nostr protocol</a> · <a href="https://github.com/nbd-wtf/nostr-tools" target="_blank">nostr-tools</a>
-    </footer>
-  </div>
-
-  <!-- Event detail modal -->
-  <div class="modal-backdrop" id="modal-backdrop">
-    <div class="modal">
-      <div class="row row--between" style="margin-bottom:var(--space-md)">
-        <span></span>
-        <button class="btn btn--ghost btn--sm" id="modal-close">✕ Close</button>
+  <!-- Relay dashboard -->
+  <section class="view" data-view="relay" hidden>
+    <div class="view-header">
+      <div>
+        <h2 class="view-title">Relay</h2>
+        <p class="view-sub">Manage your hidden relay's connections, whitelist, and stored events.</p>
       </div>
-      <div id="modal-body"></div>
     </div>
-  </div>
+    <div id="relayContent"></div>
+  </section>
 
-  <script type="module" src="js/app.js"></script>
+  <!-- Settings -->
+  <section class="view" data-view="settings" hidden>
+    <div class="view-header">
+      <h2 class="view-title">Settings</h2>
+    </div>
+    <div class="card" id="settingsCard"></div>
+  </section>
+
+</main>
+
+<!-- ========== Footer ========== -->
+<footer class="footer">
+  <a href="https://github.com/paulle0/nostr_network_stack_nip" target="_blank" rel="noopener">nns nip</a>
+  <span>·</span>
+  <a href="https://github.com/paulle0/nns_hidden_relay" target="_blank" rel="noopener">nns hidden relay</a>
+  <span>·</span>
+  <a href="https://github.com/nostr-protocol/nips" target="_blank" rel="noopener">nostr protocol</a>
+  <span>·</span>
+  <a href="https://github.com/nbd-wtf/nostr-tools" target="_blank" rel="noopener">nostr-tools</a>
+</footer>
+
+<!-- ========== Overlays ========== -->
+<div id="toasts" class="toast-stack"></div>
+<div id="modalRoot" class="modal-root" hidden></div>
+
+<!-- ========== Boot ========== -->
+<script type="module" src="js/main.js"></script>
+
 </body>
 </html>
