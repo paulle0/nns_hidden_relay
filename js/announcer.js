@@ -10,11 +10,15 @@ import * as log from './logger.js';
 /**
  * Publish a kind:10112 replaceable event listing the rendezvous
  * relay(s) where this hidden relay can be reached.
+ * @param {Uint8Array} sk — secret key
+ * @param {string[]}   relayUrls — one or more relay URLs
+ * @param {Function}   publishFn — fn(signedEvent)
  */
-export function publishRelayList(sk, relayUrl, publishFn) {
+export function publishRelayList(sk, relayUrls, publishFn) {
+  const tags = relayUrls.map(url => ['r', url]);
   const event = crypto.signEvent(sk, {
     kind: KIND.RELAY_LIST,
-    tags: [['r', relayUrl]],
+    tags,
     content: '',
   });
   publishFn(event);

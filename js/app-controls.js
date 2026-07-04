@@ -9,6 +9,9 @@ import * as log from './logger.js';
 import { RelayPool } from './relay-pool.js';
 import { RelayHandler } from './relay-handler.js';
 import {
+  publishRelayList, publishRelayInfo,
+} from './announcer.js';
+import {
   el, setStatus, renderEvents,
   renderWhitelist, renderRelayChips,
 } from './ui.js';
@@ -70,9 +73,7 @@ function removeRelay(idx) {
 }
 
 function saveRelays() {
-  localStorage.setItem(
-    STORAGE_KEY.RELAY_URLS, JSON.stringify(relayUrls)
-  );
+  localStorage.setItem(STORAGE_KEY.RELAY_URLS, JSON.stringify(relayUrls));
 }
 
 function renderAppRelays() {
@@ -122,9 +123,7 @@ function addToWhitelist() {
     return;
   }
   whitelist.push(val);
-  localStorage.setItem(
-    STORAGE_KEY.WHITELIST, JSON.stringify(whitelist)
-  );
+  localStorage.setItem(STORAGE_KEY.WHITELIST, JSON.stringify(whitelist));
   el.whitelistInput.value = '';
   renderWhitelist(whitelist, removeFromWhitelist);
   if (handler) handler.setWhitelist(whitelist);
@@ -133,9 +132,7 @@ function addToWhitelist() {
 
 function removeFromWhitelist(idx) {
   const removed = whitelist.splice(idx, 1)[0];
-  localStorage.setItem(
-    STORAGE_KEY.WHITELIST, JSON.stringify(whitelist)
-  );
+  localStorage.setItem(STORAGE_KEY.WHITELIST, JSON.stringify(whitelist));
   renderWhitelist(whitelist, removeFromWhitelist);
   if (handler) handler.setWhitelist(whitelist);
   log.info(`Removed ${removed.slice(0, 12)}… from whitelist`);
@@ -155,32 +152,31 @@ function initStartStop() {
 
 function startRelay() {
   if (!secretKey) { log.err('No identity.'); return; }
-  if (relayUrls.length === 0) {
-    log.err('No relays configured.');
-    return;
-  }
+  if (relayUrls.length === 0) { log.err('No relays configured.'); return; }
 
   const pk = crypto.getPublicKey(secretKey);
   pool = new RelayPool();
-  handler = new RelayHandler(secretKey,
-    (ev) => pool.publish(ev),
-    () => renderEvents()
+  handler = new RelayHandler(
+    secretKey, (ev) => pool.publish(ev), () => renderEvents()
   );
   handler.setWhitelist(whitelist);
-
+  let announced = false;
+  const publishFn = (ev) => pool.publish(ev);
   pool.onEvent((event) => handler.handleEvent(event));
   pool.onStatus((url, status) => {
     if (status === 'open') {
       const n = pool.size;
-      setStatus('on',
-        `Connected (${n} relay${n > 1 ? 's' : ''})`
-      );
+      setStatus('on', `Connected (${n} relay${n > 1 ? 's' : ''})`);
+      if (!announced) {
+        announced = true;
+        publishRelayList(secretKey, relayUrls, publishFn);
+        publishRelayInfo(secretKey, publishFn);
+      }
     } else if (status === 'error') {
       setStatus('error', 'Connection error');
     }
   });
   pool.connect(relayUrls, pk);
-
   setStatus('on', 'Connecting…');
   el.startBtn.disabled = true;
   el.stopBtn.disabled = false;

@@ -6,7 +6,6 @@ import * as crypto from './crypto.js';
 
 const $ = (sel) => document.querySelector(sel);
 
-// ——— DOM references ——— //
 export const el = {
   // Login screen
   get loginScreen()     { return $('#login-screen'); },
@@ -194,6 +193,8 @@ function showEventModal(ev) {
 // ——— Theme ——— //
 export function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  const btn = el.themeToggle;
-  if (btn) btn.textContent = theme === 'dark' ? '☀' : '☾';
+  const icon = theme === 'dark' ? '☀' : '☾';
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.textContent = icon;
+  });
 }

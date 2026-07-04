@@ -57,46 +57,55 @@ export function npubDecode(npubStr) {
 // ——— nrvrelay bech32 encoding (NNS NIP) ——— //
 
 /**
+ * NIP-19 compliant TLV encoding helper.
+ * Each entry: 1-byte type, 1-byte length (max 255), value bytes.
+ * Values >255 bytes are split across multiple entries of the
+ * same type, matching the nostr-tools encodeTLV pattern.
+ * @param {Object} tlv — { type: [Uint8Array, …], … }
+ * @returns {Uint8Array}
+ */
+function encodeTLV(tlv) {
+  const entries = [];
+  // Reverse key order to match nostr-tools convention
+  const keys = Object.keys(tlv).sort((a, b) => b - a);
+  for (const t of keys) {
+    for (const v of tlv[t]) {
+      // Split values >255 bytes into 255-byte chunks
+      for (let i = 0; i < v.length; i += 255) {
+        const chunk = v.slice(i, i + 255);
+        const entry = new Uint8Array(chunk.length + 2);
+        entry[0] = parseInt(t);
+        entry[1] = chunk.length;
+        entry.set(chunk, 2);
+        entries.push(entry);
+      }
+    }
+  }
+  const total = entries.reduce((s, e) => s + e.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const e of entries) { out.set(e, off); off += e.length; }
+  return out;
+}
+
+/**
  * Encode an nrvrelay1… bech32 string per the NNS NIP spec.
  * TLV 0 = 32-byte relay pubkey
  * TLV 1 = rendezvous relay URLs (one per entry)
+ * TLV 2 = optional administrator pubkey (omitted here)
  * TLV 3 = kind number 10112 (4 bytes big-endian)
  */
 export function nrvrelayEncode(hexPubkey, relayUrls) {
-  const parts = [];
+  const utf8 = new TextEncoder();
+  const kindBuf = new ArrayBuffer(4);
+  new DataView(kindBuf).setUint32(0, KIND.RELAY_LIST, false);
 
-  // TLV 0: pubkey (32 bytes)
-  const pkBytes = hexToBytes(hexPubkey);
-  parts.push(new Uint8Array([0, pkBytes.length]));
-  parts.push(pkBytes);
+  const data = encodeTLV({
+    0: [hexToBytes(hexPubkey)],
+    1: relayUrls.map(url => utf8.encode(url)),
+    3: [new Uint8Array(kindBuf)],
+  });
 
-  // TLV 1: relay URLs
-  const encoder = new TextEncoder();
-  for (const url of relayUrls) {
-    const urlBytes = encoder.encode(url);
-    parts.push(new Uint8Array([1, urlBytes.length]));
-    parts.push(urlBytes);
-  }
-
-  // TLV 3: kind 10112 as 4-byte big-endian
-  const kindBytes = new Uint8Array(4);
-  kindBytes[0] = (KIND.RELAY_LIST >> 24) & 0xff;
-  kindBytes[1] = (KIND.RELAY_LIST >> 16) & 0xff;
-  kindBytes[2] = (KIND.RELAY_LIST >> 8) & 0xff;
-  kindBytes[3] = KIND.RELAY_LIST & 0xff;
-  parts.push(new Uint8Array([3, 4]));
-  parts.push(kindBytes);
-
-  // Concatenate all TLV parts
-  const totalLen = parts.reduce((s, p) => s + p.length, 0);
-  const data = new Uint8Array(totalLen);
-  let offset = 0;
-  for (const p of parts) {
-    data.set(p, offset);
-    offset += p.length;
-  }
-
-  // Bech32-encode with 'nrvrelay' prefix
   const words = NT.utils.bech32.toWords(data);
   return NT.utils.bech32.encode('nrvrelay', words, 5000);
 }

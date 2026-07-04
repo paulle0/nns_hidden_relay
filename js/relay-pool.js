@@ -32,7 +32,7 @@ export class RelayPool {
 
   publish(signedEvent) {
     for (const conn of this._connections.values()) {
-      conn.send(signedEvent);
+      conn.send(['EVENT', signedEvent]);
     }
   }
 
