@@ -1,0 +1,151 @@
+/* ========== NNS · Views ========== */
+
+/* Login card */
+.login-card {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: var(--space-7);
+}
+
+/* Status indicator */
+.status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+.status-dot--active {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-banner {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem; font-weight: 500;
+  margin-bottom: var(--space-5);
+}
+.status-banner--off { background: var(--surface); color: var(--text-faint); border: 1px solid var(--border); }
+.status-banner--on { background: rgba(52, 211, 153, 0.1); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.25); }
+.status-banner--err { background: rgba(248, 113, 113, 0.1); color: var(--danger); border: 1px solid rgba(248, 113, 113, 0.25); }
+
+/* Log area */
+.log-area {
+  height: 200px; overflow-y: auto;
+  font-family: var(--font-mono); font-size: 0.75rem;
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.log--info { color: var(--text-faint); }
+.log--ok   { color: var(--success); }
+.log--err  { color: var(--danger); }
+
+/* Identity display */
+.identity-value {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--text-faint); word-break: break-all;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 36px;
+  user-select: all;
+}
+
+/* Event list */
+.event-list { max-height: 300px; overflow-y: auto; }
+.event-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 90px 44px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+}
+.event-row:hover { background: var(--surface); }
+.event-row:last-child { border-bottom: none; }
+.event-row__kind {
+  font-family: var(--font-mono); font-weight: 600;
+  color: var(--accent-2);
+}
+.event-row__pubkey {
+  font-family: var(--font-mono); color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.event-row__time { color: var(--text-faint); font-size: 0.72rem; }
+.event-row__action { text-align: right; }
+
+/* Settings sections */
+.settings-section {
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+.settings-section:last-child { border: none; margin: 0; padding: 0; }
+.settings-section h4 {
+  font-family: var(--font-display);
+  font-size: 1.15rem; font-weight: 500;
+  margin-bottom: var(--space-2);
+}
+.settings-section p {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin: 0 0 var(--space-3);
+}
+
+/* Whitelist entries */
+.whitelist-entry {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.whitelist-entry:last-child { border-bottom: none; }
+.whitelist-entry__keys { flex: 1; min-width: 0; }
+.whitelist-entry__npub {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block;
+}
+.whitelist-entry__hex {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block;
+}
+
+/* Relay control bar */
+.relay-controls {
+  display: flex; gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+/* Section separator inside cards */
+.card-section {
+  padding-top: var(--space-5);
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+.card-section:first-child { padding-top: 0; margin-top: 0; border-top: none; }
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  margin-bottom: var(--space-3);
+  font-weight: 500;
+}

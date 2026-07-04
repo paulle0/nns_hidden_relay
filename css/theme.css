@@ -1,0 +1,115 @@
+/* ========== NNS · Theme ========== */
+:root {
+  --font-display: Georgia, serif;
+  --font-body:    system-ui, sans-serif;
+  --font-mono:    ui-monospace, Menlo, monospace;
+
+  --accent: #6d28d9;
+  --accent-2: #8b5cf6;
+  --accent-soft: rgba(109, 40, 217, 0.12);
+  --accent-ring: rgba(109, 40, 217, 0.45);
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --shadow-1: 0 1px 2px rgba(15, 10, 30, 0.06), 0 4px 12px rgba(15, 10, 30, 0.05);
+  --shadow-2: 0 6px 24px rgba(15, 10, 30, 0.10), 0 24px 64px rgba(15, 10, 30, 0.08);
+  --shadow-purple: 0 12px 40px rgba(109, 40, 217, 0.18);
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg: #0e0a18;
+  --bg-elev: #150f24;
+  --bg-elev-2: #1c1531;
+  --surface: #1a1430;
+  --surface-2: #221a3c;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #ede9fe;
+  --text-dim: #b4abc8;
+  --text-faint: #7c7299;
+  --danger: #f87171;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --grain-opacity: 0.04;
+  --hero-glow: radial-gradient(60% 50% at 80% 20%, rgba(139, 92, 246, 0.18), transparent 60%),
+               radial-gradient(40% 40% at 10% 80%, rgba(109, 40, 217, 0.12), transparent 70%);
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg: #faf7ff;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #f3eeff;
+  --surface: #ffffff;
+  --surface-2: #f5f0ff;
+  --border: rgba(20, 10, 50, 0.08);
+  --border-strong: rgba(20, 10, 50, 0.16);
+  --text: #1a0f33;
+  --text-dim: #4a3e6b;
+  --text-faint: #8278a3;
+  --danger: #b91c1c;
+  --success: #047857;
+  --warning: #b45309;
+  --grain-opacity: 0.025;
+  --hero-glow: radial-gradient(60% 50% at 80% 20%, rgba(139, 92, 246, 0.18), transparent 60%),
+               radial-gradient(40% 40% at 10% 80%, rgba(109, 40, 217, 0.10), transparent 70%);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+body {
+  background-image: var(--hero-glow);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.05; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.25rem; }
+
+code, .mono { font-family: var(--font-mono); font-size: 0.875em; }
+a { color: var(--accent-2); }
+button { font-family: inherit; cursor: pointer; }
+
+/* Grain overlay */
+.grain {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 1000;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/></svg>");
+  mix-blend-mode: overlay;
+}
+
+::selection { background: var(--accent-soft); color: var(--text); }
