@@ -12,10 +12,10 @@ export function renderLogin() {
 
   root.innerHTML = `
     <h2 class="card-title">Import your relay identity</h2>
-    <p class="card-subtitle">Paste an existing nsec to give your hidden relay its identity.</p>
+    <p class="card-subtitle">Paste an existing secret key to give your hidden relay its identity.</p>
     <div class="field">
-      <label>Relay nsec</label>
-      <input id="loginNsec" class="input mono" type="password" placeholder="nsec1…" autocomplete="off" />
+      <label>Relay secret key</label>
+      <input id="loginNsec" class="input mono" type="text" placeholder="nsec1… or 64-char hex" autocomplete="off" />
       <p class="field-hint">Create a key pair e.g. at <a href="https://nak.nostr.com/" target="_blank" rel="noopener">nak.nostr.com</a> or in other nostr programs.</p>
     </div>
     <div class="field">
@@ -67,14 +67,21 @@ function wireEvents(root) {
 }
 
 function doLogin(root) {
-  const nsecVal = root.querySelector('#loginNsec').value.trim();
-  if (!nsecVal) { toast('Paste an nsec1… key', 'error'); return; }
+  const val = root.querySelector('#loginNsec').value.trim();
+  if (!val) { toast('Enter an nsec1… or 64-char hex secret key', 'error'); return; }
 
   let secretKey;
-  try {
-    secretKey = crypto.nsecDecode(nsecVal);
-  } catch (e) {
-    toast('Invalid nsec. Must start with nsec1…', 'error');
+  if (val.startsWith('nsec1')) {
+    try {
+      secretKey = crypto.nsecDecode(val);
+    } catch (e) {
+      toast('Invalid nsec string', 'error');
+      return;
+    }
+  } else if (/^[0-9a-f]{64}$/i.test(val)) {
+    secretKey = crypto.hexToBytes(val);
+  } else {
+    toast('Enter a valid nsec1… or 64-character hex key', 'error');
     return;
   }
 
