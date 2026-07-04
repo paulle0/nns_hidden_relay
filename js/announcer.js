@@ -10,10 +10,6 @@ import * as log from './logger.js';
 /**
  * Publish a kind:10112 replaceable event listing the rendezvous
  * relay(s) where this hidden relay can be reached.
- *
- * @param {Uint8Array} sk          — relay secret key
- * @param {string}     relayUrl    — rendezvous relay URL (wss://…)
- * @param {Function}   publishFn   — fn(signedEvent) to send the event
  */
 export function publishRelayList(sk, relayUrl, publishFn) {
   const event = crypto.signEvent(sk, {
@@ -28,9 +24,6 @@ export function publishRelayList(sk, relayUrl, publishFn) {
 /**
  * Publish a kind:10113 replaceable event containing the NIP-11
  * relay information document and supported encryption.
- *
- * @param {Uint8Array} sk          — relay secret key
- * @param {Function}   publishFn   — fn(signedEvent) to send the event
  */
 export function publishRelayInfo(sk, publishFn) {
   const infoDoc = JSON.stringify({

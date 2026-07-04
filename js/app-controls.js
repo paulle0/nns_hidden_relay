@@ -18,9 +18,10 @@ let handler = null;
 let secretKey = null;
 let whitelist = [];
 let relayUrls = [];
-
-export function initAppControls(sk) {
+let _onRelayChange = null;
+export function initAppControls(sk, onRelayChange) {
   secretKey = sk;
+  _onRelayChange = onRelayChange || null;
   loadRelayUrls();
   loadWhitelist();
   initRelayManagement();
@@ -29,10 +30,11 @@ export function initAppControls(sk) {
 }
 
 // ——— Relay URLs ——— //
-
 function loadRelayUrls() {
   const saved = localStorage.getItem(STORAGE_KEY.RELAY_URLS);
-  relayUrls = saved ? JSON.parse(saved) : [...DEFAULTS.rendezvousRelays];
+  relayUrls = saved
+    ? JSON.parse(saved)
+    : [...DEFAULTS.rendezvousRelays];
   renderAppRelays();
 }
 
@@ -55,6 +57,7 @@ function addRelay() {
   el.relayInput.value = '';
   saveRelays();
   renderAppRelays();
+  notifyRelayChange();
   log.ok(`Added relay: ${val}`);
 }
 
@@ -62,25 +65,33 @@ function removeRelay(idx) {
   const removed = relayUrls.splice(idx, 1)[0];
   saveRelays();
   renderAppRelays();
+  notifyRelayChange();
   log.info(`Removed relay: ${removed}`);
 }
 
 function saveRelays() {
-  localStorage.setItem(STORAGE_KEY.RELAY_URLS, JSON.stringify(relayUrls));
+  localStorage.setItem(
+    STORAGE_KEY.RELAY_URLS, JSON.stringify(relayUrls)
+  );
 }
 
 function renderAppRelays() {
   renderRelayChips(relayUrls, removeRelay, el.relayChipList);
 }
 
-// ——— Whitelist ——— //
+function notifyRelayChange() {
+  if (_onRelayChange && secretKey) {
+    const pk = crypto.getPublicKey(secretKey);
+    _onRelayChange(pk);
+  }
+}
 
+// ——— Whitelist ——— //
 function loadWhitelist() {
   const saved = localStorage.getItem(STORAGE_KEY.WHITELIST);
   whitelist = saved ? JSON.parse(saved) : [];
   renderWhitelist(whitelist, removeFromWhitelist);
 }
-
 function initWhitelistControls() {
   el.whitelistAdd.addEventListener('click', addToWhitelist);
   el.whitelistInput.addEventListener('keydown', (e) => {
@@ -92,7 +103,6 @@ function addToWhitelist() {
   let val = el.whitelistInput.value.trim();
   if (!val) return;
 
-  // Accept npub1… bech32 strings
   if (val.startsWith('npub1')) {
     try {
       val = crypto.npubDecode(val);
@@ -112,7 +122,9 @@ function addToWhitelist() {
     return;
   }
   whitelist.push(val);
-  localStorage.setItem(STORAGE_KEY.WHITELIST, JSON.stringify(whitelist));
+  localStorage.setItem(
+    STORAGE_KEY.WHITELIST, JSON.stringify(whitelist)
+  );
   el.whitelistInput.value = '';
   renderWhitelist(whitelist, removeFromWhitelist);
   if (handler) handler.setWhitelist(whitelist);
@@ -121,14 +133,15 @@ function addToWhitelist() {
 
 function removeFromWhitelist(idx) {
   const removed = whitelist.splice(idx, 1)[0];
-  localStorage.setItem(STORAGE_KEY.WHITELIST, JSON.stringify(whitelist));
+  localStorage.setItem(
+    STORAGE_KEY.WHITELIST, JSON.stringify(whitelist)
+  );
   renderWhitelist(whitelist, removeFromWhitelist);
   if (handler) handler.setWhitelist(whitelist);
   log.info(`Removed ${removed.slice(0, 12)}… from whitelist`);
 }
 
 // ——— Start / Stop ——— //
-
 function initStartStop() {
   el.startBtn.addEventListener('click', startRelay);
   el.stopBtn.addEventListener('click', stopRelay);
@@ -142,7 +155,10 @@ function initStartStop() {
 
 function startRelay() {
   if (!secretKey) { log.err('No identity.'); return; }
-  if (relayUrls.length === 0) { log.err('No relays configured.'); return; }
+  if (relayUrls.length === 0) {
+    log.err('No relays configured.');
+    return;
+  }
 
   const pk = crypto.getPublicKey(secretKey);
   pool = new RelayPool();
@@ -155,7 +171,10 @@ function startRelay() {
   pool.onEvent((event) => handler.handleEvent(event));
   pool.onStatus((url, status) => {
     if (status === 'open') {
-      setStatus('on', `Connected (${pool.size} relay${pool.size > 1 ? 's' : ''})`);
+      const n = pool.size;
+      setStatus('on',
+        `Connected (${n} relay${n > 1 ? 's' : ''})`
+      );
     } else if (status === 'error') {
       setStatus('error', 'Connection error');
     }

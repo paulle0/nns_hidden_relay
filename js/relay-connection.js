@@ -53,53 +53,46 @@ export class RelayConnection {
     this.ws.onclose = () => {
       this._setStatus('closed');
       if (!this._intentionallyClosed) {
-        log.info(`Lost ${this.url}. Reconnecting in 5s…`);
-        this._reconnectTimer = setTimeout(() => this._openSocket(), 5000);
+        log.info(
+          `Lost ${this.url}. Reconnecting in 5 s…`
+        );
+        this._reconnectTimer = setTimeout(
+          () => this._openSocket(), 5000
+        );
       }
     };
   }
 
   _subscribe() {
-    this._subId = 'nns_' + Math.random().toString(36).slice(2, 10);
-    const filter = { kinds: [27901], '#p': [this._ourPubkey] };
-    this.ws.send(JSON.stringify(['REQ', this._subId, filter]));
-    log.info(`Sub ${this._subId} on ${this.url}`);
+    this._subId = 'nns-' + Math.random()
+      .toString(36).slice(2, 10);
+    const filter = {
+      kinds: [27901],
+      '#p': [this._ourPubkey],
+    };
+    this.send(['REQ', this._subId, filter]);
   }
 
   _handleMessage(msg) {
-    if (!Array.isArray(msg)) return;
     const [type] = msg;
     if (type === 'EVENT' && msg[2]) {
       if (this._onEvent) this._onEvent(msg[2]);
     } else if (type === 'EOSE') {
       log.info(`EOSE on ${this.url}`);
     } else if (type === 'NOTICE') {
-      log.info(`Notice (${this.url}): ${msg[1]}`);
-    } else if (type === 'OK') {
-      const [, eventId, success, reason] = msg;
-      if (success) {
-        log.ok(`Published ${eventId.slice(0, 12)}…`);
-      } else {
-        log.err(`Rejected: ${reason}`);
-      }
+      log.info(`NOTICE ${this.url}: ${msg[1]}`);
     }
   }
 
-  send(signedEvent) {
+  send(data) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(['EVENT', signedEvent]));
+      this.ws.send(JSON.stringify(data));
     }
   }
 
   disconnect() {
     this._intentionallyClosed = true;
     clearTimeout(this._reconnectTimer);
-    if (this.ws) {
-      if (this._subId && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(['CLOSE', this._subId]));
-      }
-      this.ws.close();
-    }
     this._cleanup();
   }
 
@@ -109,12 +102,14 @@ export class RelayConnection {
       this.ws.onmessage = null;
       this.ws.onerror = null;
       this.ws.onclose = null;
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      }
       this.ws = null;
     }
-    this._subId = null;
   }
 
-  _setStatus(s) {
-    if (this._onStatus) this._onStatus(s, this.url);
+  _setStatus(status) {
+    if (this._onStatus) this._onStatus(status, this.url);
   }
 }

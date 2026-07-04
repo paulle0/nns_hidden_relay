@@ -12,13 +12,19 @@ function openDB() {
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(DB.store)) {
-        const store = db.createObjectStore(DB.store, { keyPath: 'id' });
+        const store = db.createObjectStore(
+          DB.store, { keyPath: 'id' }
+        );
         store.createIndex('kind', 'kind', { unique: false });
         store.createIndex('pubkey', 'pubkey', { unique: false });
-        store.createIndex('created_at', 'created_at', { unique: false });
+        store.createIndex(
+          'created_at', 'created_at', { unique: false }
+        );
       }
     };
-    req.onsuccess = () => { _db = req.result; resolve(_db); };
+    req.onsuccess = () => {
+      _db = req.result; resolve(_db);
+    };
     req.onerror = () => reject(req.error);
   });
 }
