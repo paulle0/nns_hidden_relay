@@ -33,7 +33,7 @@ export async function renderRelay() {
 function renderIdentityCard(npub, nrvrelay) {
   return `
     <div class="card" style="margin-bottom:var(--space-5)">
-      <div class="section-label">Identity</div>
+      <div class="section-label">Relay Identity</div>
       <div class="field">
         <label>npub</label>
         <div class="identity-value" title="${npub}">${npub}</div>
@@ -52,7 +52,7 @@ function renderControlsCard() {
   const running = isRunning();
   return `
     <div class="card" style="margin-bottom:var(--space-5)">
-      <div class="section-label">Relay</div>
+      <div class="section-label">Relay Control</div>
       <div id="statusBanner" class="status-banner status-banner--off">
         <div id="statusDot" class="status-dot"></div>
         <span id="statusText">Stopped</span>
@@ -67,7 +67,7 @@ function renderControlsCard() {
 function renderWhitelistCard() {
   return `
     <div class="card" style="margin-bottom:var(--space-5)">
-      <div class="section-label">Whitelist</div>
+      <div class="section-label">Relay Whitelist</div>
       <p style="color:var(--text-dim);font-size:0.88rem;margin:0 0 var(--space-3)">
         Only whitelisted pubkeys can send messages to this relay.
       </p>
@@ -85,7 +85,7 @@ function renderEventsCard() {
   return `
     <div class="card" style="margin-bottom:var(--space-5)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3)">
-        <div class="section-label" style="margin:0">Stored events <span id="eventCount"></span></div>
+        <div class="section-label" style="margin:0">Relay Stored Events <span id="eventCount"></span></div>
         <button class="btn-danger" id="btnClearEvents" style="padding:6px 12px;font-size:0.78rem">Clear all</button>
       </div>
       <div class="event-list" id="eventList"></div>
@@ -95,7 +95,7 @@ function renderEventsCard() {
 function renderLogCard() {
   return `
     <div class="card">
-      <div class="section-label">Log</div>
+      <div class="section-label">Relay Log</div>
       <div class="log-area" id="logArea"></div>
     </div>`;
 }
