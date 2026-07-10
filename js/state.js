@@ -5,6 +5,7 @@ export const state = {
   secretKey: null,     // Uint8Array
   relayUrls: [],       // string[]
   whitelist: [],       // string[] (hex pubkeys)
+  keyringSubkeys: {},  // { masterPk: string[] } — resolved from stored kind:17991
   running: false,
   view: 'login',
   theme: 'dark',

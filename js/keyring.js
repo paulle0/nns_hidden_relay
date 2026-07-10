@@ -38,6 +38,15 @@ export class KeyringResolver {
     return set;
   }
 
+  /** Returns the subkey map as a plain object for UI display. */
+  getSubkeyMapPlain() {
+    const obj = {};
+    for (const [master, subs] of this._subkeyMap) {
+      if (subs.size > 0) obj[master] = [...subs];
+    }
+    return obj;
+  }
+
   /** Scan stored events for kind:17991 keyring events. */
   async refresh() {
     if (this._masterKeys.size === 0) return;

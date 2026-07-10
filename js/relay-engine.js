@@ -2,6 +2,7 @@
 import { STORAGE_KEY } from './config.js';
 import * as crypto from './crypto.js';
 import * as log from './logger.js';
+import { setState } from './state.js';
 import { RelayPool } from './relay-pool.js';
 import { RelayHandler } from './relay-handler.js';
 import { KeyringResolver } from './keyring.js';
@@ -30,6 +31,7 @@ export function startRelay(secretKey, relayUrls, whitelist, { onStatus, onStoreU
   keyring = new KeyringResolver();
   keyring.onUpdate((effectiveSet) => {
     handler.setWhitelist(effectiveSet);
+    setState({ keyringSubkeys: keyring.getSubkeyMapPlain() });
   });
   keyring.setMasterKeys(whitelist);
 
