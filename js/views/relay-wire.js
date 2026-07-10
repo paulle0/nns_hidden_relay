@@ -82,7 +82,7 @@ function addWhitelistEntry(root, input) {
   toast(`Whitelisted ${val.slice(0, 12)}…`, 'success');
 }
 
-function renderWhitelistEntries(root) {
+export function renderWhitelistEntries(root) {
   const container = root.querySelector('#whitelistEntries');
   if (state.whitelist.length === 0) {
     container.innerHTML = '<span class="chip-list__empty">No pubkeys whitelisted.</span>';
@@ -90,13 +90,21 @@ function renderWhitelistEntries(root) {
   }
   container.innerHTML = state.whitelist.map((pk, i) => {
     const npub = crypto.npubEncode(pk);
+    const subs = state.keyringSubkeys[pk] || [];
+    const subHtml = subs.map(sk => {
+      const snpub = crypto.npubEncode(sk);
+      return `<div class="whitelist-subkey">
+        <span class="whitelist-subkey__badge">subkey</span>
+        <span class="whitelist-entry__npub" title="${snpub}">${snpub}</span>
+      </div>`;
+    }).join('');
     return `<div class="whitelist-entry">
       <div class="whitelist-entry__keys">
         <span class="whitelist-entry__npub" title="${npub}">${npub}</span>
         <span class="whitelist-entry__hex" title="${pk}">${pk}</span>
       </div>
       <button class="chip__remove" data-idx="${i}">×</button>
-    </div>`;
+    </div>${subHtml}`;
   }).join('');
   container.querySelectorAll('.chip__remove').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -1,10 +1,12 @@
 // js/views/relay.js — Relay dashboard: template rendering
-import { state } from '../state.js';
+import { state, subscribe } from '../state.js';
 import * as crypto from '../crypto.js';
 import * as log from '../logger.js';
 import { escapeHtml, attachCopy } from '../ui-utils.js';
 import { isRunning } from '../relay-engine.js';
-import { wireControls, wireWhitelist, renderEventList, appendLog } from './relay-wire.js';
+import { wireControls, wireWhitelist, renderWhitelistEntries, renderEventList, appendLog } from './relay-wire.js';
+
+let _unsubKeyring = null;
 
 export async function renderRelay() {
   const root = document.getElementById('relayContent');
@@ -28,6 +30,16 @@ export async function renderRelay() {
   attachCopy(root);
   renderEventList(root);
   log.onLog((entry) => appendLog(entry));
+
+  // Re-render whitelist when keyring subkeys update
+  if (_unsubKeyring) _unsubKeyring();
+  let prevSubkeys = state.keyringSubkeys;
+  _unsubKeyring = subscribe((s) => {
+    if (s.keyringSubkeys !== prevSubkeys) {
+      prevSubkeys = s.keyringSubkeys;
+      renderWhitelistEntries(root);
+    }
+  });
 }
 
 function renderIdentityCard(npub, nrvrelay) {
