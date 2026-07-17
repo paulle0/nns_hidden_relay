@@ -1,5 +1,5 @@
 // js/crypto.js — Key gen, signing, NIP-44/04, bech32 encode/decode
-import { STORAGE_KEY, KIND } from './config.js';
+import { STORAGE_KEY } from './config.js';
 
 const NT = window.NostrTools;
 
@@ -58,12 +58,9 @@ function encodeTLV(tlv) {
 
 export function nrvrelayEncode(hexPubkey, relayUrls) {
   const utf8 = new TextEncoder();
-  const kindBuf = new ArrayBuffer(4);
-  new DataView(kindBuf).setUint32(0, KIND.RELAY_LIST, false);
   const data = encodeTLV({
     0: [hexToBytes(hexPubkey)],
     1: relayUrls.map(url => utf8.encode(url)),
-    3: [new Uint8Array(kindBuf)],
   });
   return NT.nip19.encodeBytes('nrvrelay', data);
 }
