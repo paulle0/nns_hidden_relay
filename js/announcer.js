@@ -19,7 +19,7 @@ export function publishRelayInfo(sk, publishFn) {
     name: DEFAULTS.relayName,
     description: DEFAULTS.relayDescription,
     supported_nips: [1, 11],
-    software: 'nns-hidden-relay',
+    software: 'nap-hidden-relay',
     version: '0.1.0',
   });
   const event = crypto.signEvent(sk, {
