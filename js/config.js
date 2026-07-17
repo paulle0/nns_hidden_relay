@@ -2,8 +2,8 @@
 
 export const DEFAULTS = {
   rendezvousRelays: ['wss://nos.lol'],
-  relayName: 'NNS Hidden Relay',
-  relayDescription: 'A browser-based NNS hidden relay',
+  relayName: 'nap hidden relay',
+  relayDescription: 'A browser-based nap hidden relay',
 };
 
 export const KIND = {
